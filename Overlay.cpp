@@ -119,9 +119,11 @@ namespace VA
         snprintf(buf, sizeof(buf), "%.2f", g_Config.vignetteIntensity); SetWindowTextA(hLabelVignetteVal, buf);
     }
 
-    void ToggleMenu()
+    static const UINT WM_VA_TOGGLE_MENU = WM_USER + 101;
+
+    static void DoToggleMenu()
     {
-        if (!g_hOverlayWnd) return;
+        if (!g_hOverlayWnd || !IsWindow(g_hOverlayWnd)) return;
 
         bool next = !g_MenuOpen.load();
         g_MenuOpen.store(next);
@@ -172,6 +174,14 @@ namespace VA
 
                 if (dwTarget && dwTarget != dwCur) AttachThreadInput(dwCur, dwTarget, FALSE);
             }
+        }
+    }
+
+    void ToggleMenu()
+    {
+        if (g_hOverlayWnd && IsWindow(g_hOverlayWnd))
+        {
+            PostMessageA(g_hOverlayWnd, WM_VA_TOGGLE_MENU, 0, 0);
         }
     }
 
@@ -415,16 +425,20 @@ namespace VA
             return 0;
         }
 
+        case WM_VA_TOGGLE_MENU:
+            DoToggleMenu();
+            return 0;
+
         case WM_KEYDOWN:
             if (wParam == VK_F5 || wParam == VK_ESCAPE)
             {
-                ToggleMenu();
+                DoToggleMenu();
                 return 0;
             }
             break;
 
         case WM_CLOSE:
-            ToggleMenu();
+            DoToggleMenu();
             return 0;
 
         case WM_DESTROY:
@@ -440,12 +454,15 @@ namespace VA
 
     static DWORD WINAPI OverlayThreadProc(LPVOID lpParam)
     {
+        INITCOMMONCONTROLSEX icex = { sizeof(INITCOMMONCONTROLSEX), ICC_BAR_CLASSES | ICC_STANDARD_CLASSES };
+        InitCommonControlsEx(&icex);
+
         WNDCLASSEXA wc = {
             sizeof(WNDCLASSEXA),
             CS_HREDRAW | CS_VREDRAW,
             OverlayWndProc,
             0L, 0L,
-            GetModuleHandleA(NULL),
+            g_hOverlayModule ? g_hOverlayModule : GetModuleHandleA(NULL),
             NULL,
             LoadCursor(NULL, IDC_ARROW),
             (HBRUSH)(COLOR_WINDOW + 1),

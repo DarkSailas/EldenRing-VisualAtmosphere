@@ -18,6 +18,7 @@ c_sources = [
 
 cpp_sources = [
     os.path.join(DIR, "VisualAtmosphere.cpp"),
+    os.path.join(DIR, "Overlay.cpp"),
     os.path.join(DIR, "dllmain.cpp"),
 ]
 

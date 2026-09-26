@@ -33,9 +33,9 @@ Unlike ReShade or external screen-space injectors, **VisualAtmosphere** hooks di
    - Native vignette intensity and radius controls.
    - Controlled shadow deepening for rich contrast without crushing dark details.
 
-4. ⌨️ **Live Hotkeys**:
-   - `F5` (`0x74`): Instantly toggle atmosphere effects ON/OFF during gameplay.
-   - `F6` (`0x75`): Hot-reload `VisualAtmosphere.ini` from disk without restarting the game.
+4. 🖥️ **Native In-Game GUI Overlay & Live Hotkeys**:
+   - `F5` (`0x74`): Open/close the dark-mode in-game settings GUI menu (`VisualAtmosphere — Настройки`) with live sliders for RGB channels, saturation, contrast, shadows, and presets.
+   - `F6` (`0x75`): Quick toggle atmosphere effects ON/OFF on the fly during gameplay.
 
 ---
 
@@ -62,33 +62,28 @@ Unlike ReShade or external screen-space injectors, **VisualAtmosphere** hooks di
 
 ```ini
 [Atmosphere]
-; Enable atmosphere enhancement (true / false)
 EnableAtmosphere = true
+Preset = 2
+ScaleR = 0.920000
+ScaleG = 0.930000
+ScaleB = 1.030000
+Saturation = 0.780000
+Contrast = 1.070000
+ShadowDepth = 0.020000
+VignetteIntensity = 0.180000
 
-; Cold spectral filter (removes warm/yellowish atmospheric haze)
-; Range: 0.00 (off) to 0.50 (heavy). Recommended: 0.10 - 0.14
-ColdTintIntensity = 0.12
-ColdTintR = 8
-ColdTintG = 20
-ColdTintB = 36
-
-; Cinematic vignette intensity around screen edges
-; Range: 0.00 (off) to 0.80 (pronounced). Recommended: 0.20 - 0.25
-VignetteIntensity = 0.22
-
-; Vignette coverage radius from screen perimeter (0.15 - 0.35)
-VignetteSize = 0.25
-
-; Deepens shadows and enhances midtone contrast
-; Range: 0.00 (off) to 0.20 (deep black). Recommended: 0.04 - 0.07
-ShadowDepth = 0.05
+[CustomPreset]
+ScaleR = 0.920000
+ScaleG = 0.920000
+ScaleB = 1.060000
+Saturation = 0.720000
+Contrast = 1.100000
+ShadowDepth = 0.025000
+VignetteIntensity = 0.250000
 
 [Hotkeys]
-; Hotkey to toggle effects on/off on the fly (0x74 = F5)
-ToggleKey = 0x74
-
-; Hotkey to hot-reload configuration from disk (0x75 = F6)
-ReloadKey = 0x75
+MenuKey = 0x74
+ToggleKey = 0x75
 ```
 
 ---
@@ -127,9 +122,9 @@ Outputs `VisualAtmosphere.dll` (stripped, static runtime, ~1.1 MB).
    - Мягкое затемнение по краям экрана с настраиваемым радиусом.
    - Увеличение глубины теней без завала деталей в абсолютно черный цвет.
 
-4. ⌨️ **Управление на лету**:
-   - Клавиша `F5` (`0x74`): мгновенное включение и отключение мода во время игры.
-   - Клавиша `F6` (`0x75`): горячая перезагрузка параметров из `VisualAtmosphere.ini` без перезапуска игры.
+4. 🖥️ **Нативный графический интерфейс (GUI) и горячие клавиши**:
+   - Клавиша `F5` (`0x74`): открытие и закрытие встроенного окна настроек (`VisualAtmosphere — Настройки`) с ползунками каналов RGB, насыщенности, контрастности, глубины теней и пресетов в реальном времени.
+   - Клавиша `F6` (`0x75`): быстрое мгновенное включение и отключение атмосферных эффектов на лету в игре.
 
 ---
 

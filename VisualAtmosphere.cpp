@@ -1,4 +1,5 @@
 #include "VisualAtmosphere.hpp"
+#include "Overlay.hpp"
 #include "Minhook/MinHook.h"
 #include "Ini/ini.h"
 #include <cstdio>
@@ -455,6 +456,13 @@ namespace VA
                 SaveConfig();
                 Log("ToggleKey 0x%X pressed: VisualAtmosphere enabled=%d", g_Config.toggleKey, g_Config.enableAtmosphere ? 1 : 0);
             }
+
+            if (g_Config.menuKey > 0 && (GetAsyncKeyState(g_Config.menuKey) & 1))
+            {
+                ToggleMenu();
+                Log("MenuKey 0x%X pressed: VisualAtmosphere menu toggled", g_Config.menuKey);
+            }
+
             Sleep(40);
         }
 
@@ -471,6 +479,8 @@ namespace VA
         Log("=== VisualAtmosphere Engine v2.4 (Live ColorMatrix Engine) ===");
         Log("Module base: 0x%llX", (unsigned long long)g_hModule);
 
+        InitOverlay(g_hModule);
+
         g_Running = true;
         g_hWorkerThread = CreateThread(NULL, 0, WorkerThread, NULL, 0, NULL);
         return g_hWorkerThread != NULL;
@@ -485,6 +495,8 @@ namespace VA
             CloseHandle(g_hWorkerThread);
             g_hWorkerThread = NULL;
         }
+
+        ShutdownOverlay();
 
         MH_DisableHook(MH_ALL_HOOKS);
         MH_Uninitialize();
