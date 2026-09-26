@@ -311,12 +311,6 @@ namespace VA
     static void* __fastcall Hooked_ComputeColorMatrix(void* pParam, float* pOutMatrix)
     {
         void* ret = g_OrigComputeColorMatrix(pParam, pOutMatrix);
-        static uint64_t s_ColorCalls = 0;
-        if (++s_ColorCalls == 1 || (s_ColorCalls % 3600 == 0))
-        {
-            Log("Active ToneMap ColorMatrix hooked frame (call #%llu)", (unsigned long long)s_ColorCalls);
-        }
-
         if (g_Config.enableAtmosphere && ret)
         {
             ApplyAtmosphereMatrix((float*)ret);
@@ -327,12 +321,6 @@ namespace VA
     static void* __fastcall Hooked_ComputeVignette(void* rcx, void* rdx, void* r8, void* r9, float arg5, float arg6)
     {
         void* ret = g_OrigComputeVignette(rcx, rdx, r8, r9, arg5, arg6);
-        static uint64_t s_VignetteCalls = 0;
-        if (++s_VignetteCalls == 1 || (s_VignetteCalls % 3600 == 0))
-        {
-            Log("Active ToneMap Vignette hooked frame (call #%llu)", (unsigned long long)s_VignetteCalls);
-        }
-
         if (g_Config.enableAtmosphere && ret)
         {
             float* pVignette = (float*)ret;
