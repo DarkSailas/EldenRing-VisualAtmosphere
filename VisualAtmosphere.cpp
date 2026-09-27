@@ -73,6 +73,10 @@ namespace VA
         }
     }
 
+    // Forward declarations for cached adj matrix (defined near ApplyAtmosphereMatrix)
+    static float g_CachedAdj[4][4];
+    static bool g_AdjDirty = true;
+
     void ApplyPreset(int id)
     {
         g_Config.activePreset = id;
@@ -128,6 +132,7 @@ namespace VA
         }
         Log("Applied preset %d (Scale=(%.2f, %.2f, %.2f), Sat=%.2f, Contrast=%.2f)",
             id, g_Config.scaleR, g_Config.scaleG, g_Config.scaleB, g_Config.saturation, g_Config.contrast);
+        g_AdjDirty = true;
     }
 
     void LoadConfig()
@@ -196,6 +201,7 @@ namespace VA
         }
 
         g_Enabled = g_Config.enableAtmosphere;
+        g_AdjDirty = true;
         Log("Config loaded: Enabled=%d, Preset=%d, MenuKey=0x%X, Scale=(%.2f, %.2f, %.2f), Sat=%.2f, Contrast=%.2f",
             g_Enabled ? 1 : 0, g_Config.activePreset, g_Config.menuKey,
             g_Config.scaleR, g_Config.scaleG, g_Config.scaleB, g_Config.saturation, g_Config.contrast);
@@ -234,13 +240,11 @@ namespace VA
 
         file.write(ini);
         Log("VisualAtmosphere.ini saved: MenuKey=%s, Preset=%d", hexMenu, g_Config.activePreset);
+        g_AdjDirty = true;
     }
 
-    static void ApplyAtmosphereMatrix(float* pOutMatrix)
+    static void RecomputeAdjMatrix()
     {
-        float orig[4][4];
-        memcpy(orig, pOutMatrix, sizeof(orig));
-
         float s = g_Config.saturation;
         float scaleR = g_Config.scaleR;
         float scaleG = g_Config.scaleG;
@@ -248,12 +252,10 @@ namespace VA
         float contrast = g_Config.contrast;
         float shadowOffset = -g_Config.shadowDepth * 0.2f;
 
-        // Balanced desaturation weights
         float rw = 0.3333f * (1.0f - s);
         float gw = 0.3333f * (1.0f - s);
         float bw = 0.3333f * (1.0f - s);
 
-        // Saturation matrix S
         float S[4][4] = {
             { rw + s, gw,     bw,     0.0f },
             { rw,     gw + s, bw,     0.0f },
@@ -261,7 +263,6 @@ namespace VA
             { 0.0f,   0.0f,   0.0f,   1.0f }
         };
 
-        // Tint matrix T
         float T[4][4] = {
             { scaleR, 0.0f,   0.0f,   0.0f },
             { 0.0f,   scaleG, 0.0f,   0.0f },
@@ -269,7 +270,6 @@ namespace VA
             { 0.0f,   0.0f,   0.0f,   1.0f }
         };
 
-        // Photographic pivot contrast around 0.18 linear mid-gray (no crushed midtones!)
         float off = 0.18f * (1.0f - contrast) + shadowOffset;
         float C[4][4] = {
             { contrast, 0.0f,     0.0f,     0.0f },
@@ -278,20 +278,28 @@ namespace VA
             { off,      off,      off,      1.0f }
         };
 
-        // Composite adjustment: M_adj = S * T * C
         float ST[4][4] = { 0 };
         for (int r = 0; r < 4; ++r)
             for (int c = 0; c < 4; ++c)
                 for (int k = 0; k < 4; ++k)
                     ST[r][c] += S[r][k] * T[k][c];
 
-        float adj[4][4] = { 0 };
+        memset(g_CachedAdj, 0, sizeof(g_CachedAdj));
         for (int r = 0; r < 4; ++r)
             for (int c = 0; c < 4; ++c)
                 for (int k = 0; k < 4; ++k)
-                    adj[r][c] += ST[r][k] * C[k][c];
+                    g_CachedAdj[r][c] += ST[r][k] * C[k][c];
 
-        // Final output matrix: result = orig * adj
+        g_AdjDirty = false;
+    }
+
+    static void ApplyAtmosphereMatrix(float* pOutMatrix)
+    {
+        if (g_AdjDirty) RecomputeAdjMatrix();
+
+        float orig[4][4];
+        memcpy(orig, pOutMatrix, sizeof(orig));
+
         float result[4][4];
         for (int r = 0; r < 4; ++r)
         {
@@ -300,7 +308,7 @@ namespace VA
                 result[r][c] = 0.0f;
                 for (int k = 0; k < 4; ++k)
                 {
-                    result[r][c] += orig[r][k] * adj[k][c];
+                    result[r][c] += orig[r][k] * g_CachedAdj[k][c];
                 }
             }
         }
