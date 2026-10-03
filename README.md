@@ -1,69 +1,63 @@
-# 🌌 EldenRing-VisualAtmosphere: Native DirectX 12 Atmosphere Engine for Elden Ring
+# EldenRing-VisualAtmosphere
 
-![Version](https://img.shields.io/badge/version-1.0.0-purple?style=for-the-badge)
-![Platform](https://img.shields.io/badge/platform-Windows%20x64-blue?style=for-the-badge)
-![DirectX](https://img.shields.io/badge/DirectX-12-orange?style=for-the-badge)
-![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-2.4-blue)
+![Platform](https://img.shields.io/badge/platform-Windows%20x64-lightgrey)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-[English](#english) | [Русский](#russian)
+[English](#english) | [Русский](#русский)
 
----
+## English
 
-<a name="english"></a>
-## 🌌 English
+A DLL mod for Elden Ring that changes the game's own color grading: channel tint, saturation, contrast, shadow depth and vignette strength. It ships four cold, desaturated presets in the spirit of Bloodborne, Dark Souls 3 and Demon's Souls, plus one custom slot.
 
-A zero-performance-cost, native DirectX 12 atmosphere and color-grading mod for **Elden Ring** (supporting **v1.12+ / Shadow of the Erdtree**, **The Convergence**, and **Seamless Co-op**).
+The mod hooks two engine functions with MinHook, the one that builds the color matrix and the one that computes the vignette, and adjusts their output. It does not hook DirectX, draw anything or add a post-processing pass, so it does not conflict with overlays, frame generation mods or HDR.
 
-Unlike ReShade or external screen-space injectors, **VisualAtmosphere** hooks directly into Elden Ring's internal tone mapping matrix (`ComputeColorMatrix`) and vignette rendering pass (`ComputeVignette`) via MinHook. It applies color grading and atmosphere transformations directly inside the engine's native pipeline.
+Both functions are found by byte signature. Tested on `eldenring.exe` 2.7.1 with me3 0.13.0, The Convergence and Seamless Co-op. If a signature is not found after a game update, the mod writes that to `VisualAtmosphere.log` and leaves the picture unchanged.
 
----
+> [!WARNING]
+> DLL mods do not load with Easy Anti-Cheat running. Play offline with EAC disabled (Mod Engine and me3 do this for you), or use Seamless Co-op.
 
-### ✨ Key Features
+### Presets
 
-1. ⚡ **Zero Performance Impact**:
-   - Computes modifications directly inside the engine's internal tone map matrix.
-   - Frame time overhead is effectively **< 0.01 ms** (zero extra draw calls or full-screen shader passes).
-   - 100% compatible with **PureDark DLSS 3 Frame Generation**, FSR 3, and HDR displays without hook collisions or frame-pacing degradation.
+| `Preset` | Name | R / G / B | Saturation | Contrast | Shadow depth | Vignette |
+| --- | --- | --- | --- | --- | --- | --- |
+| 0 | Bloodborne (Yharnam Noir) | 0.96 / 0.95 / 1.00 | 0.82 | 1.05 | 0.01 | 0.15 |
+| 1 | Dark Souls 3 (Lothric Ashen) | 0.94 / 0.94 / 0.97 | 0.75 | 1.04 | 0.01 | 0.12 |
+| 2 | Demon's Souls (Boletaria Deep Cold) | 0.92 / 0.93 / 1.03 | 0.78 | 1.07 | 0.02 | 0.18 |
+| 3 | Subtle Cold Slate | 0.98 / 0.98 / 1.01 | 0.88 | 1.02 | 0.00 | 0.10 |
+| 4 | Custom | from `[CustomPreset]` | | | | |
 
-2. 🌑 **Gothic Dark Fantasy Atmosphere**:
-   - **Cold Slate Spectral Filter**: Cuts through the excessive yellow/greenish ambient haze of the Lands Between to deliver a gritty, atmospheric visual style reminiscent of *Dark Souls III* and *Bloodborne*.
-   - **Custom RGB Tints**: Fine-tune tone balance across Red, Green, and Blue spectra.
+### Installation
 
-3. 🎬 **Cinematic Vignette & Shadow Depth**:
-   - Native vignette intensity and radius controls.
-   - Controlled shadow deepening for rich contrast without crushing dark details.
+Take `VisualAtmosphere.dll` and `VisualAtmosphere.ini` from the [`release`](release) folder.
 
-4. 🖥️ **Native In-Game GUI Overlay & Live Hotkeys**:
-   - `F5` (`0x74`): Open/close the dark-mode in-game settings GUI menu (`VisualAtmosphere — Настройки`) with live sliders for RGB channels, saturation, contrast, shadows, and presets.
-   - `F6` (`0x75`): Quick toggle atmosphere effects ON/OFF on the fly during gameplay.
+**me3**: put both files into the `dll` folder of your mod and add the DLL to the profile:
 
----
+```toml
+[[natives]]
+path = './../mod/dll/VisualAtmosphere.dll'
+```
 
-### 📦 Installation
+**Mod Engine 2**: add the DLL path to `external_dlls` in `config_eldenring.toml`.
 
-#### Using Mod Engine 2 / Mod Engine 3 (Recommended)
-1. Copy `VisualAtmosphere.dll` and `VisualAtmosphere.ini` into your mod DLL directory:
-   - For **The Convergence**: place in `ConvergenceER\mod\dll\`.
-   - For **Mod Engine 2 / 3**: place in `mod\dll\`.
-2. In your `.me3` profile or `config_eldenring.toml`, register the native library:
-   ```toml
-   [[natives]]
-   path = './../mod/dll/VisualAtmosphere.dll'
-   ```
-3. Launch the game in offline mode with EAC disabled.
+**[Elden Mod Loader](https://www.nexusmods.com/eldenring/mods/117)**: put both files into `ELDEN RING\Game\mods`.
 
-#### Using Elden Mod Loader
-1. Install [Elden Mod Loader](https://www.nexusmods.com/eldenring/mods/117).
-2. Place `VisualAtmosphere.dll` and `VisualAtmosphere.ini` directly into `ELDEN RING\Game\mods\`.
+### Settings menu
 
----
+The DLL has no overlay of its own. The in-game menu is drawn by [EldenRing-PostureBarMod](https://github.com/DarkSailas/EldenRing-PostureBarMod), which loads this DLL and calls its exports `VA_GetConfig`, `VA_SaveConfig` and `VA_ApplyPreset`. With both mods installed, F5 opens a window with the preset list and sliders; changes are visible at once and Save writes them to the ini. The menu key is fixed in PostureBarMod, so `MenuKey` in the ini does not move it.
 
-### ⚙️ Configuration (`VisualAtmosphere.ini`)
+Without PostureBarMod the mod works from the ini alone: edit the file, restart the game, and use `ToggleKey` (F6 in the shipped ini) to switch the effect on and off while playing.
+
+### Configuration
+
+`VisualAtmosphere.ini` lives next to the DLL.
 
 ```ini
 [Atmosphere]
 EnableAtmosphere = true
+; 0-3 built-in presets, 4 custom
 Preset = 2
+; The values below are read only when Preset = 4
 ScaleR = 0.920000
 ScaleG = 0.930000
 ScaleB = 1.030000
@@ -73,6 +67,7 @@ ShadowDepth = 0.020000
 VignetteIntensity = 0.180000
 
 [CustomPreset]
+; Values stored for preset 4
 ScaleR = 0.920000
 ScaleG = 0.920000
 ScaleB = 1.060000
@@ -82,60 +77,114 @@ ShadowDepth = 0.025000
 VignetteIntensity = 0.250000
 
 [Hotkeys]
+; Virtual-key codes. 0x74 = F5, 0x75 = F6, 0 = off
 MenuKey = 0x74
 ToggleKey = 0x75
 ```
 
----
+`ScaleR/G/B` multiply the color channels, `Saturation` and `Contrast` are 1.0 for the unmodified picture, `ShadowDepth` lowers the black level, `VignetteIntensity` darkens the corners. If the ini is missing, preset 0 is used and the toggle key is off.
 
-### 🛠️ Building from Source
+### Building
 
-Requires **MinGW-w64** GCC / G++ (v13 or newer) with C++20 support:
-```bash
+MinGW-w64 with g++ that supports C++20 (WinLibs works). With Python:
+
+```
 python build.py
 ```
-Outputs `VisualAtmosphere.dll` (stripped, static runtime, ~1.1 MB).
 
----
+Without Python:
 
-<a name="russian"></a>
-## 🌌 Русский
+```
+mkdir build
+gcc -O3 -c Minhook/buffer.c     -o build/buffer.o     -I. -IMinhook
+gcc -O3 -c Minhook/hde64.c      -o build/hde64.o      -I. -IMinhook
+gcc -O3 -c Minhook/hook.c       -o build/hook.o       -I. -IMinhook
+gcc -O3 -c Minhook/trampoline.c -o build/trampoline.o -I. -IMinhook
+g++ -O3 -std=c++20 -c VisualAtmosphere.cpp -o build/VisualAtmosphere.o -I. -IMinhook -IIni
+g++ -O3 -std=c++20 -c dllmain.cpp          -o build/dllmain.o          -I. -IMinhook -IIni
+g++ -O3 -shared -o VisualAtmosphere.dll build/*.o -static -static-libgcc -static-libstdc++ -s -lkernel32 -luser32 -lcomctl32 -ldwmapi -lgdi32
+```
 
-Высокопроизводительный нативный мод цветокоррекции и атмосферы на базе DirectX 12 для **Elden Ring** (полная поддержка **v1.12+ / Shadow of the Erdtree**, **The Convergence** и **Seamless Co-op**).
+The result is a single DLL of about 1.1 MB with no runtime dependencies.
 
-В отличие от ReShade и внешних инжекторов шейдеров, **VisualAtmosphere** перехватывает функции движка `ComputeColorMatrix` и `ComputeVignette` через библиотеку MinHook и модифицирует матрицу тональной компрессии непосредственно внутри конвейера игры.
+### Credits and license
 
----
+[MinHook](https://github.com/TsudaKageyu/minhook) by Tsuda Kageyu, [mINI](https://github.com/metayeti/mINI) by Danijel Durakovic.
 
-### ✨ Основные возможности
+MIT, see [LICENSE](LICENSE). Not affiliated with FromSoftware or Bandai Namco.
 
-1. ⚡ **Нулевое влияние на FPS**:
-   - Расчет выполняется прямо внутри матрицы цветности движка.
-   - Задержка кадра составляет менее **0.01 мс** (нет дополнительных полноэкранных проходов постобработки).
-   - Полная совместимость с генерацией кадров **DLSS 3 Frame Generation (PureDark)** и HDR мониторами.
+## Русский
 
-2. 🌑 **Атмосфера Dark Fantasy**:
-   - **Холодный спектральный фильтр**: срезает излишнюю желтизну и теплый туман Междуземья, придавая игре мрачную эстетику в духе *Dark Souls III* и *Bloodborne*.
-   - Точная настройка каналов RGB.
+DLL-мод для Elden Ring, который меняет цветокоррекцию самой игры: оттенок по каналам, насыщенность, контраст, глубину теней и силу виньетки. В комплекте четыре холодных приглушённых пресета в духе Bloodborne, Dark Souls 3 и Demon's Souls и один пользовательский.
 
-3. 🎬 **Кинематографическая виньетка и глубина теней**:
-   - Мягкое затемнение по краям экрана с настраиваемым радиусом.
-   - Увеличение глубины теней без завала деталей в абсолютно черный цвет.
+Мод через MinHook перехватывает две функции движка — ту, что собирает цветовую матрицу, и ту, что считает виньетку, — и правит их результат. DirectX он не трогает, ничего не рисует и не добавляет проход постобработки, поэтому не конфликтует с оверлеями, модами генерации кадров и HDR.
 
-4. 🖥️ **Нативный графический интерфейс (GUI) и горячие клавиши**:
-   - Клавиша `F5` (`0x74`): открытие и закрытие встроенного окна настроек (`VisualAtmosphere — Настройки`) с ползунками каналов RGB, насыщенности, контрастности, глубины теней и пресетов в реальном времени.
-   - Клавиша `F6` (`0x75`): быстрое мгновенное включение и отключение атмосферных эффектов на лету в игре.
+Обе функции ищутся по сигнатуре. Проверено на `eldenring.exe` 2.7.1 с me3 0.13.0, The Convergence и Seamless Co-op. Если после обновления игры сигнатура не найдётся, мод напишет об этом в `VisualAtmosphere.log` и оставит картинку как есть.
 
----
+> [!WARNING]
+> С включённым Easy Anti-Cheat DLL-моды не загружаются. Играйте офлайн с отключённым EAC (Mod Engine и me3 делают это сами) или через Seamless Co-op.
 
-### 📦 Установка
+### Пресеты
 
-1. Скопируйте `VisualAtmosphere.dll` и `VisualAtmosphere.ini` в папку с DLL модами:
-   - Для **ConvergenceER**: `ConvergenceER\mod\dll\`
-   - Для **Mod Engine 2 / 3**: `mod\dll\`
-2. В файле конфигурации профиля (`.me3` или `config_eldenring.toml`) добавьте:
-   ```toml
-   [[natives]]
-   path = './../mod/dll/VisualAtmosphere.dll'
-   ```
-3. Запустите игру без античита.
+| `Preset` | Название | R / G / B | Насыщенность | Контраст | Глубина теней | Виньетка |
+| --- | --- | --- | --- | --- | --- | --- |
+| 0 | Bloodborne (Yharnam Noir) | 0.96 / 0.95 / 1.00 | 0.82 | 1.05 | 0.01 | 0.15 |
+| 1 | Dark Souls 3 (Lothric Ashen) | 0.94 / 0.94 / 0.97 | 0.75 | 1.04 | 0.01 | 0.12 |
+| 2 | Demon's Souls (Boletaria Deep Cold) | 0.92 / 0.93 / 1.03 | 0.78 | 1.07 | 0.02 | 0.18 |
+| 3 | Subtle Cold Slate | 0.98 / 0.98 / 1.01 | 0.88 | 1.02 | 0.00 | 0.10 |
+| 4 | Пользовательский | из `[CustomPreset]` | | | | |
+
+### Установка
+
+Возьмите `VisualAtmosphere.dll` и `VisualAtmosphere.ini` из папки [`release`](release).
+
+**me3**: положите оба файла в папку `dll` мода и добавьте DLL в профиль:
+
+```toml
+[[natives]]
+path = './../mod/dll/VisualAtmosphere.dll'
+```
+
+**Mod Engine 2**: добавьте путь к DLL в `external_dlls` в `config_eldenring.toml`.
+
+**[Elden Mod Loader](https://www.nexusmods.com/eldenring/mods/117)**: положите оба файла в `ELDEN RING\Game\mods`.
+
+### Меню настроек
+
+Своего оверлея у DLL нет. Меню в игре рисует [EldenRing-PostureBarMod](https://github.com/DarkSailas/EldenRing-PostureBarMod): он подгружает эту DLL и вызывает её экспорты `VA_GetConfig`, `VA_SaveConfig` и `VA_ApplyPreset`. Когда стоят оба мода, F5 открывает окно со списком пресетов и ползунками; изменения видны сразу, кнопка Save записывает их в ini. Клавиша меню задана в PostureBarMod, параметр `MenuKey` в ini её не меняет.
+
+Без PostureBarMod мод работает только от ini: поправьте файл, перезапустите игру, а эффект в игре включайте и выключайте клавишей `ToggleKey` (в поставляемом ini это F6).
+
+### Настройка
+
+`VisualAtmosphere.ini` лежит рядом с DLL. Пример файла — в английском разделе выше.
+
+| Раздел | Ключ | Описание |
+| --- | --- | --- |
+| `Atmosphere` | `EnableAtmosphere` | Включён ли эффект при старте. |
+| `Atmosphere` | `Preset` | 0–3 — встроенные пресеты, 4 — пользовательский. |
+| `Atmosphere` | `ScaleR`, `ScaleG`, `ScaleB` | Множители цветовых каналов. Читаются только при `Preset = 4`. |
+| `Atmosphere` | `Saturation`, `Contrast` | 1.0 — картинка без изменений. Читаются только при `Preset = 4`. |
+| `Atmosphere` | `ShadowDepth` | Опускает уровень чёрного. Читается только при `Preset = 4`. |
+| `Atmosphere` | `VignetteIntensity` | Затемнение углов. Читается только при `Preset = 4`. |
+| `CustomPreset` | те же семь ключей | Значения, сохранённые для пресета 4. |
+| `Hotkeys` | `ToggleKey` | Код виртуальной клавиши для включения и выключения эффекта. `0x75` — F6, `0` — выключено. |
+| `Hotkeys` | `MenuKey` | Сохраняется в файле; клавишу меню PostureBarMod не меняет. |
+
+Если ini нет, берётся пресет 0, клавиша переключения выключена.
+
+### Сборка
+
+Нужен MinGW-w64 с g++ и поддержкой C++20 (подойдёт WinLibs). С Python:
+
+```
+python build.py
+```
+
+Без Python — команды из английского раздела «Building». Получается одна DLL около 1,1 МБ без внешних зависимостей.
+
+### Благодарности и лицензия
+
+[MinHook](https://github.com/TsudaKageyu/minhook) — Tsuda Kageyu, [mINI](https://github.com/metayeti/mINI) — Danijel Durakovic.
+
+MIT, см. [LICENSE](LICENSE). Проект не связан с FromSoftware и Bandai Namco.
