@@ -293,9 +293,21 @@ namespace VA
         g_AdjDirty = false;
     }
 
+    // The settings menu writes g_Config directly through VA_GetConfig(), so slider
+    // changes are detected here by comparing against the values last used.
+    static bool AdjInputsChanged()
+    {
+        static float last[6] = { 0 };
+        const float cur[6] = { g_Config.scaleR, g_Config.scaleG, g_Config.scaleB,
+                               g_Config.saturation, g_Config.contrast, g_Config.shadowDepth };
+        if (memcmp(last, cur, sizeof(cur)) == 0) return false;
+        memcpy(last, cur, sizeof(cur));
+        return true;
+    }
+
     static void ApplyAtmosphereMatrix(float* pOutMatrix)
     {
-        if (g_AdjDirty) RecomputeAdjMatrix();
+        if (AdjInputsChanged() || g_AdjDirty) RecomputeAdjMatrix();
 
         float orig[4][4];
         memcpy(orig, pOutMatrix, sizeof(orig));
