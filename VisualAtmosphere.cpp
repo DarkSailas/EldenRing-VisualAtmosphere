@@ -475,7 +475,7 @@ namespace VA
         std::string logPath = GetModuleDir() + "VisualAtmosphere.log";
         DeleteFileA(logPath.c_str());
 
-        Log("=== VisualAtmosphere Engine v2.6 (Live ColorMatrix Engine) ===");
+        Log("=== VisualAtmosphere Engine v2.6.1 (Live ColorMatrix Engine) ===");
         Log("Module base: 0x%llX", (unsigned long long)g_hModule);
 
         g_Running = true;

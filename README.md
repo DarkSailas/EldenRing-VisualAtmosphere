@@ -1,6 +1,6 @@
 # EldenRing-VisualAtmosphere
 
-![Version](https://img.shields.io/badge/version-2.6-blue)
+![Version](https://img.shields.io/badge/version-2.6.1-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows%20x64-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -46,7 +46,7 @@ path = './../mod/dll/VisualAtmosphere.dll'
 
 The mod draws its own settings window and needs no other mod. `MenuKey` (F5 in the shipped ini, `0` turns it off) opens a window with the preset list and sliders; changes are visible at once and Save writes them to the ini. Esc or the same key closes it.
 
-While the window is open, keyboard and mouse do not reach the game: the character stays still and the camera does not turn. The mod sets the game's own input-pause flag every frame, returns an empty state from DirectInput `GetDeviceState` for the keyboard and mouse, and draws its own cursor. Gamepad input may still get through.
+While the window is open, keyboard and mouse do not reach the game: the character stays still and the camera does not turn. The mod sets the game's own input-pause flag every frame, returns an empty state from DirectInput `GetDeviceState` for the keyboard and mouse, and draws its own cursor. It also intercepts the game's `SetCursorPos` and `ClipCursor` calls, so the game cannot recentre or lock the cursor under the window. The window opens at the top centre of the screen. Gamepad input may still get through.
 
 The "Enable Visual Atmosphere" checkbox in the window switches the effect on and off; there is no separate hotkey for it. If the window cannot be created, the color hooks still work and the ini is the only way to change settings.
 
@@ -155,7 +155,7 @@ path = './../mod/dll/VisualAtmosphere.dll'
 
 Мод сам рисует окно настроек, другие моды для этого не нужны. Клавиша `MenuKey` (в поставляемом ini это F5, `0` — выключено) открывает окно со списком пресетов и ползунками; изменения видны сразу, кнопка Save записывает их в ini. Закрывается окно той же клавишей или Esc.
 
-Пока окно открыто, клавиатура и мышь до игры не доходят: персонаж стоит, камера не вращается. Мод каждый кадр выставляет игровой флаг паузы ввода, отдаёт пустое состояние из `GetDeviceState` в DirectInput для клавиатуры и мыши и рисует свой курсор. Ввод с геймпада может проходить.
+Пока окно открыто, клавиатура и мышь до игры не доходят: персонаж стоит, камера не вращается. Мод каждый кадр выставляет игровой флаг паузы ввода, отдаёт пустое состояние из `GetDeviceState` в DirectInput для клавиатуры и мыши и рисует свой курсор. Вызовы игры `SetCursorPos` и `ClipCursor` тоже перехватываются, поэтому игра не возвращает курсор в центр и не запирает его. Окно открывается у верхнего края экрана по центру. Ввод с геймпада может проходить.
 
 Эффект включается и выключается галочкой «Enable Visual Atmosphere» в окне, отдельной клавиши для этого нет. Если окно создать не удалось, цветовые перехваты всё равно работают, а настройки меняются только через ini.
 

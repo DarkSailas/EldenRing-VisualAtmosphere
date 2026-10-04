@@ -225,6 +225,45 @@ namespace VA
             return ok;
         }
 
+        // While the window is open the game keeps recentring and clipping the cursor every frame,
+        // which makes it fight the mouse. Its calls are swallowed; the last clip it asked for is
+        // put back when the window closes.
+        typedef BOOL(WINAPI* SetCursorPos_t)(int, int);
+        typedef BOOL(WINAPI* ClipCursor_t)(const RECT*);
+        static SetCursorPos_t g_OrigSetCursorPos = nullptr;
+        static ClipCursor_t g_OrigClipCursor = nullptr;
+
+        static BOOL WINAPI Hooked_SetCursorPos(int x, int y)
+        {
+            if (g_BlockInput.load(std::memory_order_relaxed)) return TRUE;
+            return g_OrigSetCursorPos(x, y);
+        }
+
+        static BOOL WINAPI Hooked_ClipCursor(const RECT* rect)
+        {
+            if (g_BlockInput.load(std::memory_order_relaxed))
+            {
+                g_HaveSavedClip = rect != nullptr;
+                if (rect) g_SavedClip = *rect;
+                return TRUE;
+            }
+            return g_OrigClipCursor(rect);
+        }
+
+        static BOOL RealClipCursor(const RECT* rect)
+        {
+            return g_OrigClipCursor ? g_OrigClipCursor(rect) : ClipCursor(rect);
+        }
+
+        static void InstallCursorHooks()
+        {
+            bool ok = MH_CreateHook((LPVOID)&SetCursorPos, (LPVOID)&Hooked_SetCursorPos, (LPVOID*)&g_OrigSetCursorPos) == MH_OK
+                && MH_EnableHook((LPVOID)&SetCursorPos) == MH_OK;
+            ok = MH_CreateHook((LPVOID)&ClipCursor, (LPVOID)&Hooked_ClipCursor, (LPVOID*)&g_OrigClipCursor) == MH_OK
+                && MH_EnableHook((LPVOID)&ClipCursor) == MH_OK && ok;
+            Log("Overlay: SetCursorPos / ClipCursor hook %s", ok ? "installed" : "failed");
+        }
+
         static LRESULT CALLBACK OverlayWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         {
             if (g_BlockInput.load(std::memory_order_relaxed))
@@ -565,10 +604,10 @@ namespace VA
             const float s = g.scale;
             ImGuiIO& io = ImGui::GetIO();
             ImGui::SetNextWindowSize(ImVec2(450.0f * s, 520.0f * s), ImGuiCond_FirstUseEver);
-            ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f), ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
+            ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, 24.0f * s), ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.0f));
 
             bool open = true;
-            if (ImGui::Begin("Visual Atmosphere  |  Dark Fantasy Engine v2.6", &open, ImGuiWindowFlags_NoCollapse))
+            if (ImGui::Begin("Visual Atmosphere  |  Dark Fantasy Engine v2.6.1", &open, ImGuiWindowFlags_NoCollapse))
             {
                 AtmosphereConfig& cfg = g_Config;
                 const ImVec4 accent(0.88f, 0.76f, 0.48f, 1.0f);
@@ -767,7 +806,7 @@ namespace VA
 
             if (g_MenuOpen.load())
             {
-                ClipCursor(NULL);
+                RealClipCursor(NULL);
                 HoldGameInput();
             }
             else if (g_BlockInput.load())
@@ -780,7 +819,7 @@ namespace VA
                 else
                 {
                     g_BlockInput.store(false);
-                    if (g_HaveSavedClip) ClipCursor(&g_SavedClip);
+                    if (g_HaveSavedClip) RealClipCursor(&g_SavedClip);
                     g_HaveSavedClip = false;
                 }
             }
@@ -911,6 +950,7 @@ namespace VA
             }
 
             InstallDirectInputHooks();
+            InstallCursorHooks();
             Log("Overlay: hooks installed, settings window on key 0x%X", g_Config.menuKey);
             return true;
         }
