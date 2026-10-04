@@ -1,6 +1,6 @@
 # EldenRing-VisualAtmosphere
 
-![Version](https://img.shields.io/badge/version-2.5-blue)
+![Version](https://img.shields.io/badge/version-2.6-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows%20x64-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -48,7 +48,7 @@ The mod draws its own settings window and needs no other mod. `MenuKey` (F5 in t
 
 While the window is open, keyboard and mouse do not reach the game: the character stays still and the camera does not turn. The mod sets the game's own input-pause flag every frame, returns an empty state from DirectInput `GetDeviceState` for the keyboard and mouse, and draws its own cursor. Gamepad input may still get through.
 
-`ToggleKey` (F6 in the shipped ini) switches the effect on and off while playing. If the window cannot be created, the color hooks still work and the ini is the only way to change settings.
+The "Enable Visual Atmosphere" checkbox in the window switches the effect on and off; there is no separate hotkey for it. If the window cannot be created, the color hooks still work and the ini is the only way to change settings.
 
 ### Configuration
 
@@ -79,9 +79,8 @@ ShadowDepth = 0.025000
 VignetteIntensity = 0.250000
 
 [Hotkeys]
-; Virtual-key codes. 0x74 = F5, 0x75 = F6, 0 = off
+; Virtual-key code. 0x74 = F5, 0 = off
 MenuKey = 0x74
-ToggleKey = 0x75
 ```
 
 `ScaleR/G/B` multiply the color channels, `Saturation` and `Contrast` are 1.0 for the unmodified picture, `ShadowDepth` lowers the black level, `VignetteIntensity` darkens the corners. If the ini is missing, preset 0 is used and the toggle key is off.
@@ -158,7 +157,7 @@ path = './../mod/dll/VisualAtmosphere.dll'
 
 Пока окно открыто, клавиатура и мышь до игры не доходят: персонаж стоит, камера не вращается. Мод каждый кадр выставляет игровой флаг паузы ввода, отдаёт пустое состояние из `GetDeviceState` в DirectInput для клавиатуры и мыши и рисует свой курсор. Ввод с геймпада может проходить.
 
-Клавиша `ToggleKey` (в поставляемом ini это F6) включает и выключает эффект в игре. Если окно создать не удалось, цветовые перехваты всё равно работают, а настройки меняются только через ini.
+Эффект включается и выключается галочкой «Enable Visual Atmosphere» в окне, отдельной клавиши для этого нет. Если окно создать не удалось, цветовые перехваты всё равно работают, а настройки меняются только через ini.
 
 ### Настройка
 
@@ -173,7 +172,6 @@ path = './../mod/dll/VisualAtmosphere.dll'
 | `Atmosphere` | `ShadowDepth` | Опускает уровень чёрного. Читается только при `Preset = 4`. |
 | `Atmosphere` | `VignetteIntensity` | Затемнение углов. Читается только при `Preset = 4`. |
 | `CustomPreset` | те же семь ключей | Значения, сохранённые для пресета 4. |
-| `Hotkeys` | `ToggleKey` | Код виртуальной клавиши для включения и выключения эффекта. `0x75` — F6, `0` — выключено. |
 | `Hotkeys` | `MenuKey` | Код виртуальной клавиши окна настроек. `0x74` — F5, `0` — выключено. |
 
 Если ini нет, берётся пресет 0, клавиша переключения выключена.

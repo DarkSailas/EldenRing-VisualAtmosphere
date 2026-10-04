@@ -568,7 +568,7 @@ namespace VA
             ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f), ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
 
             bool open = true;
-            if (ImGui::Begin("Visual Atmosphere  |  Dark Fantasy Engine v2.5", &open, ImGuiWindowFlags_NoCollapse))
+            if (ImGui::Begin("Visual Atmosphere  |  Dark Fantasy Engine v2.6", &open, ImGuiWindowFlags_NoCollapse))
             {
                 AtmosphereConfig& cfg = g_Config;
                 const ImVec4 accent(0.88f, 0.76f, 0.48f, 1.0f);
@@ -797,6 +797,31 @@ namespace VA
             return g_OrigPresent(swapChain, syncInterval, flags);
         }
 
+        static BOOL CALLBACK FindGameWindowProc(HWND hwnd, LPARAM lParam)
+        {
+            DWORD pid = 0;
+            GetWindowThreadProcessId(hwnd, &pid);
+            if (pid != GetCurrentProcessId() || !IsWindowVisible(hwnd) || GetWindow(hwnd, GW_OWNER)) return TRUE;
+            RECT r = {};
+            GetClientRect(hwnd, &r);
+            if (r.right - r.left < 320 || r.bottom - r.top < 240) return TRUE;
+            *(HWND*)lParam = hwnd;
+            return FALSE;
+        }
+
+        // The helper device below must not be created while the game and Streamline (ERSS-FG) are still
+        // setting up their own: doing it 0.6 s after load crashed inside sl.interposer.dll.
+        static void WaitForGameRenderer()
+        {
+            HWND hwnd = NULL;
+            while (!hwnd)
+            {
+                EnumWindows(FindGameWindowProc, (LPARAM)&hwnd);
+                if (!hwnd) Sleep(500);
+            }
+            Sleep(7000);
+        }
+
         // Creates a throwaway device and swap chain to read the addresses of Present and ExecuteCommandLists.
         static bool ResolveGraphicsTargets(void** presentOut, void** executeOut)
         {
@@ -864,6 +889,9 @@ namespace VA
             }
 
             if (!FindPadSlot()) Log("Overlay: pad manager signature not found yet, will retry when the window opens");
+
+            WaitForGameRenderer();
+            Log("Overlay: game window is up, resolving Present and ExecuteCommandLists");
 
             void* present = nullptr;
             void* execute = nullptr;

@@ -197,7 +197,6 @@ namespace VA
         if (ini.has("Hotkeys"))
         {
             auto& s = ini["Hotkeys"];
-            if (s.has("ToggleKey")) g_Config.toggleKey = SafeStoi(s.get("ToggleKey"), 0);
             if (s.has("MenuKey")) g_Config.menuKey = SafeStoi(s.get("MenuKey"), VK_F5);
         }
 
@@ -233,10 +232,9 @@ namespace VA
         ini["CustomPreset"]["ShadowDepth"] = std::to_string(g_Config.customShadowDepth);
         ini["CustomPreset"]["VignetteIntensity"] = std::to_string(g_Config.customVignetteIntensity);
 
-        char hexToggle[16], hexMenu[16];
-        sprintf(hexToggle, "0x%X", g_Config.toggleKey);
+        char hexMenu[16];
         sprintf(hexMenu, "0x%X", g_Config.menuKey);
-        ini["Hotkeys"]["ToggleKey"] = hexToggle;
+        ini["Hotkeys"].remove("ToggleKey");
         ini["Hotkeys"]["MenuKey"] = hexMenu;
 
         file.write(ini);
@@ -464,15 +462,7 @@ namespace VA
 
         while (g_Running)
         {
-            if (g_Config.toggleKey > 0 && (GetAsyncKeyState(g_Config.toggleKey) & 1))
-            {
-                g_Config.enableAtmosphere = !g_Config.enableAtmosphere;
-                g_Enabled = g_Config.enableAtmosphere;
-                SaveConfig();
-                Log("ToggleKey 0x%X pressed: VisualAtmosphere enabled=%d", g_Config.toggleKey, g_Config.enableAtmosphere ? 1 : 0);
-            }
-
-            Sleep(40);
+            Sleep(200);
         }
 
         return 0;
@@ -485,7 +475,7 @@ namespace VA
         std::string logPath = GetModuleDir() + "VisualAtmosphere.log";
         DeleteFileA(logPath.c_str());
 
-        Log("=== VisualAtmosphere Engine v2.5 (Live ColorMatrix Engine) ===");
+        Log("=== VisualAtmosphere Engine v2.6 (Live ColorMatrix Engine) ===");
         Log("Module base: 0x%llX", (unsigned long long)g_hModule);
 
         g_Running = true;

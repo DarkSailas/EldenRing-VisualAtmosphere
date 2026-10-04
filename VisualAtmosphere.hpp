@@ -22,7 +22,6 @@ namespace VA
         float vignetteIntensity = 0.15f;
 
         // Hotkeys
-        int toggleKey = 0;       // Disabled (toggled via in-game checkbox)
         int menuKey = VK_F5;     // 0x74: open GUI menu (Default F5)
 
         // Custom User Preset storage
