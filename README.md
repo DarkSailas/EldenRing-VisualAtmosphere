@@ -1,6 +1,6 @@
 # EldenRing-VisualAtmosphere
 
-![Version](https://img.shields.io/badge/version-2.4-blue)
+![Version](https://img.shields.io/badge/version-2.5-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows%20x64-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -10,7 +10,7 @@
 
 A DLL mod for Elden Ring that changes the game's own color grading: channel tint, saturation, contrast, shadow depth and vignette strength. It ships four cold, desaturated presets in the spirit of Bloodborne, Dark Souls 3 and Demon's Souls, plus one custom slot.
 
-The mod hooks two engine functions with MinHook, the one that builds the color matrix and the one that computes the vignette, and adjusts their output. It does not hook DirectX, draw anything or add a post-processing pass, so it does not conflict with overlays, frame generation mods or HDR.
+The mod hooks two engine functions with MinHook, the one that builds the color matrix and the one that computes the vignette, and adjusts their output. It adds no post-processing pass, so HDR and frame generation keep working. The only DirectX hook is the one that draws the settings window.
 
 Both functions are found by byte signature. Tested on `eldenring.exe` 2.7.1 with me3 0.13.0, The Convergence and Seamless Co-op. If a signature is not found after a game update, the mod writes that to `VisualAtmosphere.log` and leaves the picture unchanged.
 
@@ -44,9 +44,11 @@ path = './../mod/dll/VisualAtmosphere.dll'
 
 ### Settings menu
 
-The DLL has no overlay of its own. The in-game menu is drawn by [EldenRing-PostureBarMod](https://github.com/DarkSailas/EldenRing-PostureBarMod), which loads this DLL and calls its exports `VA_GetConfig`, `VA_SaveConfig` and `VA_ApplyPreset`. With both mods installed, F5 opens a window with the preset list and sliders; changes are visible at once and Save writes them to the ini. The menu key is fixed in PostureBarMod, so `MenuKey` in the ini does not move it.
+The mod draws its own settings window and needs no other mod. `MenuKey` (F5 in the shipped ini, `0` turns it off) opens a window with the preset list and sliders; changes are visible at once and Save writes them to the ini. Esc or the same key closes it.
 
-Without PostureBarMod the mod works from the ini alone: edit the file, restart the game, and use `ToggleKey` (F6 in the shipped ini) to switch the effect on and off while playing.
+While the window is open, keyboard and mouse do not reach the game: the character stays still and the camera does not turn. The mod sets the game's own input-pause flag every frame, returns an empty state from DirectInput `GetDeviceState` for the keyboard and mouse, and draws its own cursor. Gamepad input may still get through.
+
+`ToggleKey` (F6 in the shipped ini) switches the effect on and off while playing. If the window cannot be created, the color hooks still work and the ini is the only way to change settings.
 
 ### Configuration
 
@@ -100,9 +102,10 @@ gcc -O3 -c Minhook/buffer.c     -o build/buffer.o     -I. -IMinhook
 gcc -O3 -c Minhook/hde64.c      -o build/hde64.o      -I. -IMinhook
 gcc -O3 -c Minhook/hook.c       -o build/hook.o       -I. -IMinhook
 gcc -O3 -c Minhook/trampoline.c -o build/trampoline.o -I. -IMinhook
-g++ -O3 -std=c++20 -c VisualAtmosphere.cpp -o build/VisualAtmosphere.o -I. -IMinhook -IIni
-g++ -O3 -std=c++20 -c dllmain.cpp          -o build/dllmain.o          -I. -IMinhook -IIni
-g++ -O3 -shared -o VisualAtmosphere.dll build/*.o -static -static-libgcc -static-libstdc++ -s -lkernel32 -luser32 -lcomctl32 -ldwmapi -lgdi32
+for s in VisualAtmosphere Overlay dllmain ImGui/imgui ImGui/imgui_draw ImGui/imgui_tables ImGui/imgui_widgets ImGui/imgui_impl_dx12; do
+  g++ -O3 -std=c++20 -DNDEBUG -c $s.cpp -o build/$(basename $s).o -I. -IMinhook -IIni -IImGui
+done
+g++ -O3 -shared -o VisualAtmosphere.dll build/*.o -static -static-libgcc -static-libstdc++ -s -lkernel32 -luser32 -lcomctl32 -ldwmapi -lgdi32 -ld3d12 -ldxgi -ld3dcompiler -limm32 -ldinput8 -ldxguid
 ```
 
 The result is a single DLL of about 1.1 MB with no runtime dependencies.
@@ -117,7 +120,7 @@ MIT, see [LICENSE](LICENSE). Not affiliated with FromSoftware or Bandai Namco.
 
 DLL-мод для Elden Ring, который меняет цветокоррекцию самой игры: оттенок по каналам, насыщенность, контраст, глубину теней и силу виньетки. В комплекте четыре холодных приглушённых пресета в духе Bloodborne, Dark Souls 3 и Demon's Souls и один пользовательский.
 
-Мод через MinHook перехватывает две функции движка — ту, что собирает цветовую матрицу, и ту, что считает виньетку, — и правит их результат. DirectX он не трогает, ничего не рисует и не добавляет проход постобработки, поэтому не конфликтует с оверлеями, модами генерации кадров и HDR.
+Мод через MinHook перехватывает две функции движка — ту, что собирает цветовую матрицу, и ту, что считает виньетку, — и правит их результат. Прохода постобработки он не добавляет, поэтому HDR и генерация кадров продолжают работать. Единственный перехват DirectX нужен для отрисовки окна настроек.
 
 Обе функции ищутся по сигнатуре. Проверено на `eldenring.exe` 2.7.1 с me3 0.13.0, The Convergence и Seamless Co-op. Если после обновления игры сигнатура не найдётся, мод напишет об этом в `VisualAtmosphere.log` и оставит картинку как есть.
 
@@ -151,9 +154,11 @@ path = './../mod/dll/VisualAtmosphere.dll'
 
 ### Меню настроек
 
-Своего оверлея у DLL нет. Меню в игре рисует [EldenRing-PostureBarMod](https://github.com/DarkSailas/EldenRing-PostureBarMod): он подгружает эту DLL и вызывает её экспорты `VA_GetConfig`, `VA_SaveConfig` и `VA_ApplyPreset`. Когда стоят оба мода, F5 открывает окно со списком пресетов и ползунками; изменения видны сразу, кнопка Save записывает их в ini. Клавиша меню задана в PostureBarMod, параметр `MenuKey` в ini её не меняет.
+Мод сам рисует окно настроек, другие моды для этого не нужны. Клавиша `MenuKey` (в поставляемом ini это F5, `0` — выключено) открывает окно со списком пресетов и ползунками; изменения видны сразу, кнопка Save записывает их в ini. Закрывается окно той же клавишей или Esc.
 
-Без PostureBarMod мод работает только от ini: поправьте файл, перезапустите игру, а эффект в игре включайте и выключайте клавишей `ToggleKey` (в поставляемом ini это F6).
+Пока окно открыто, клавиатура и мышь до игры не доходят: персонаж стоит, камера не вращается. Мод каждый кадр выставляет игровой флаг паузы ввода, отдаёт пустое состояние из `GetDeviceState` в DirectInput для клавиатуры и мыши и рисует свой курсор. Ввод с геймпада может проходить.
+
+Клавиша `ToggleKey` (в поставляемом ini это F6) включает и выключает эффект в игре. Если окно создать не удалось, цветовые перехваты всё равно работают, а настройки меняются только через ini.
 
 ### Настройка
 
@@ -169,7 +174,7 @@ path = './../mod/dll/VisualAtmosphere.dll'
 | `Atmosphere` | `VignetteIntensity` | Затемнение углов. Читается только при `Preset = 4`. |
 | `CustomPreset` | те же семь ключей | Значения, сохранённые для пресета 4. |
 | `Hotkeys` | `ToggleKey` | Код виртуальной клавиши для включения и выключения эффекта. `0x75` — F6, `0` — выключено. |
-| `Hotkeys` | `MenuKey` | Сохраняется в файле; клавишу меню PostureBarMod не меняет. |
+| `Hotkeys` | `MenuKey` | Код виртуальной клавиши окна настроек. `0x74` — F5, `0` — выключено. |
 
 Если ini нет, берётся пресет 0, клавиша переключения выключена.
 

@@ -18,7 +18,13 @@ c_sources = [
 
 cpp_sources = [
     os.path.join(DIR, "VisualAtmosphere.cpp"),
+    os.path.join(DIR, "Overlay.cpp"),
     os.path.join(DIR, "dllmain.cpp"),
+    os.path.join(DIR, "ImGui", "imgui.cpp"),
+    os.path.join(DIR, "ImGui", "imgui_draw.cpp"),
+    os.path.join(DIR, "ImGui", "imgui_tables.cpp"),
+    os.path.join(DIR, "ImGui", "imgui_widgets.cpp"),
+    os.path.join(DIR, "ImGui", "imgui_impl_dx12.cpp"),
 ]
 
 obj_files = []
@@ -44,10 +50,12 @@ for src in cpp_sources:
     obj_name = os.path.splitext(os.path.basename(src))[0] + ".o"
     obj = os.path.join(BUILD_DIR, obj_name)
     cmd = [
-        "g++", "-O3", "-std=c++20", "-c", src, "-o", obj,
+        # NDEBUG: ImGui's IM_ASSERT must not abort the game
+        "g++", "-O3", "-std=c++20", "-DNDEBUG", "-c", src, "-o", obj,
         f"-I{DIR}",
         f"-I{os.path.join(DIR, 'Minhook')}",
         f"-I{os.path.join(DIR, 'Ini')}",
+        f"-I{os.path.join(DIR, 'ImGui')}",
     ]
     print(f"  [CPP] {os.path.basename(src)}")
     res = subprocess.run(cmd)
@@ -64,6 +72,7 @@ link_cmd = [
     "-static", "-static-libgcc", "-static-libstdc++",
     "-s",  # Strip symbols
     "-lkernel32", "-luser32", "-lcomctl32", "-ldwmapi", "-lgdi32",
+    "-ld3d12", "-ldxgi", "-ld3dcompiler", "-limm32", "-ldinput8", "-ldxguid",
 ]
 print("\nLinking VisualAtmosphere.dll...")
 res = subprocess.run(link_cmd)

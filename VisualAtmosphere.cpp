@@ -1,4 +1,5 @@
 #include "VisualAtmosphere.hpp"
+#include "Overlay.hpp"
 #include "Minhook/MinHook.h"
 #include "Ini/ini.h"
 #include <cstdio>
@@ -293,7 +294,7 @@ namespace VA
         g_AdjDirty = false;
     }
 
-    // The settings menu writes g_Config directly through VA_GetConfig(), so slider
+    // The settings window (Overlay.cpp) writes g_Config directly, so slider
     // changes are detected here by comparing against the values last used.
     static bool AdjInputsChanged()
     {
@@ -331,6 +332,7 @@ namespace VA
     static void* __fastcall Hooked_ComputeColorMatrix(void* pParam, float* pOutMatrix)
     {
         void* ret = g_OrigComputeColorMatrix(pParam, pOutMatrix);
+        Overlay::HoldGameInput();
         if (g_Config.enableAtmosphere && ret)
         {
             ApplyAtmosphereMatrix((float*)ret);
@@ -454,6 +456,12 @@ namespace VA
             return 1;
         }
 
+        // The colour hooks work without the settings window.
+        if (!Overlay::Init())
+        {
+            Log("Settings window is unavailable, edit VisualAtmosphere.ini instead");
+        }
+
         while (g_Running)
         {
             if (g_Config.toggleKey > 0 && (GetAsyncKeyState(g_Config.toggleKey) & 1))
@@ -477,7 +485,7 @@ namespace VA
         std::string logPath = GetModuleDir() + "VisualAtmosphere.log";
         DeleteFileA(logPath.c_str());
 
-        Log("=== VisualAtmosphere Engine v2.4 (Live ColorMatrix Engine) ===");
+        Log("=== VisualAtmosphere Engine v2.5 (Live ColorMatrix Engine) ===");
         Log("Module base: 0x%llX", (unsigned long long)g_hModule);
 
         g_Running = true;
@@ -487,6 +495,7 @@ namespace VA
 
     void Shutdown()
     {
+        Overlay::Shutdown();
         g_Running = false;
         if (g_hWorkerThread)
         {
